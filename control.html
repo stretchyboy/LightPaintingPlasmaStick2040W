@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>{{name}}</title>
+    <meta charset="UTF-8"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <link rel="stylesheet" href="/css/styles.css" />
+    
+</head>
+<body>
+    <h1>{{name}}</h1>
+    <p>Image is {{widthCM}}cm wide.</p>
+    <form id="frameselect">
+        <input type="hidden" name="cat" value="{{cat}}" \>
+        <input type="hidden" name="anim" value="{{anim}}" \>
+        <div>
+            <label for="frame">Choose the frame to show:</label>
+            <input name="frame" id="frame" type="number" min="1" max="{{framecount}}" value="{{currentframe}}" width="3">
+            <button id="increment">+</button>
+            <button id="decrement">-</button>
+            
+        </div>
+
+        <div>
+            <label for="duration">Duration is seconds:</label>
+            <select name="duration" id="duration">
+            {{render_options(range(1,10), 5)}}
+            </select>
+        </div>
+
+        <div>
+            <label for="submit">Action:</label>
+            <input type="submit" id="submit" name="submit" value="Load" />
+        </div>
+    </form>
+    
+    <label for="sighting">Sighting Dots</label>
+    <label class="switch">
+      <input type="checkbox" name="sightingdots" id="sightingdots">
+      <span class="slider round"></span>
+    </label>
+
+    <pre id="feedback"></pre>
+
+    {{"<div><img src=\""+src+"\"></div>" if src else ""}}
+
+    <a href="/">Home</a>
+<script>
+  const CAMERAURL = "{{CAMERAURL}}"
+  console.log("CAMERAURL value", CAMERAURL)
+</script>
+    <script src="/js/scripts.js"></script> 
+</body>
+</html>
