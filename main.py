@@ -22,20 +22,12 @@ from stickframeplayer import StickFramePlayer
 # Set how many LEDs you have
 NUM_LEDS = 144
 
-# The SPEED that the LEDs cycle at (1 - 255)
-SPEED = 20
-
-# How many times the LEDs will be updated per second
-UPDATES = 40
-
 # WS2812 / NeoPixel™ LEDs
 led_strip = plasma.WS2812(NUM_LEDS, 0, 0, plasma_stick.DAT, color_order=plasma.COLOR_ORDER_GRB)
 
 # Start updating the LED strip
 led_strip.start()
 led_strip.clear()
-
-
 
 APIURL = "https://raw.githubusercontent.com/stretchyboy/lp-projects/main/"
 
@@ -44,16 +36,7 @@ info("ip", ip)
 CAMERAURL = f"http://{secrets.CAMERAIP}:8080/ccapi"
 
 cache = {}
-
        
-# TODO : show list of images from the server
-'''
-async def stickframe_categories(categories):
-    cats = [render_template("stickframe-category", name=name) for name, items in categories.items()]    
-    out = "\n".join(cats)
-    return out
-'''
-
 def stickframe_categories(categories):
     out = ""
     for catname, anim in categories.items():
@@ -201,7 +184,11 @@ def show_frame(request, cat, anim, frame, duration):
         #print("show_frame", j)
         ministick = StickFramePlayer()
         ministick.loadJson(j)
-        rowdur = float(duration)/float(ministick.width)
+        rowdur = int(1000000000 * float(duration)/float(ministick.width))
+        startTime = time.time_ns()
+        nowTime = startTime
+        targetTime = startTime + rowdur
+        print("duration", duration,"ministick.width", ministick.width, "rowdur", rowdur, "startTime",startTime,"targetTime",targetTime )
         try : 
             for col in ministick.getNextColumn():
               for y in range(ministick.height):
@@ -219,8 +206,12 @@ def show_frame(request, cat, anim, frame, duration):
                         led_strip.set_rgb(y, r, g, b, 10 )
                 except Exception as e:
                     error("> show_frame set_rgb Exception ", e, y, r, g, b, 10 )
-                
-              time.sleep(rowdur)
+              
+              while nowTime < targetTime:
+                  time.sleep_ms(0)
+                  nowTime = time.time_ns()
+              targetTime += rowdur 
+              #time.sleep(rowdur)
         except Exception as e:
             error("> show_frame within col Exception ", e, col)
         led_strip.clear()
