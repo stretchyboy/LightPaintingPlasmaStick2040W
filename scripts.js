@@ -43,12 +43,25 @@ async function sendData() {
     }
   } else { 
     sightingdots.checked = false
+    //await sendSightingDots(false)
+    
     addFeedback("Showing")
     await sendShutter()
     
-    //body.style.backgroundColor = "black";
-    try {    
-        const response = await fetch("/show/"+formData.get("cat")+"/anim/"+formData.get("anim")+"/"+formData.get("frame")+"/"+formData.get("duration"), {
+    body.style.backgroundColor = "black";
+    try {
+
+        const esc = encodeURIComponent;
+        const params = { 
+          hidewhite: formData.get("hidewhite"),
+          paintblack: formData.get("paintblack"),
+          paintblackas: formData.get("paintblackas")
+        };
+        // this line takes the params object and builds the query string
+        const query = Object.keys(params).map(k => `${esc(k)}=${esc(params[k])}`).join('&')
+      
+
+        const response = await fetch("/show/"+formData.get("cat")+"/anim/"+formData.get("anim")+"/"+formData.get("frame")+"/"+formData.get("duration")+"?"+query, {
         method: "GET",
         cache:"no-store",
         // Set the FormData instance as the request body
