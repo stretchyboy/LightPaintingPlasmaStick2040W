@@ -140,28 +140,56 @@ async function sendShutter(action="full_press") { // ["full_press", "half_press"
   // Associate the FormData object with the form element
   try {
     addFeedback("Shutter "+action)
-    const data = {"af": false,
-                        "action": action
-                    }
+    const data = {"af": false, "action": action}
 
-        const response = await fetch(CAMERAURL+"/ver100/shooting/control/shutterbutton/manual", {
-        mode:    "no-cors",
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                // 'Content-Type': 'application/x-www-form-urlencoded',
-                
-              },
-              redirect: "follow", // manual, *follow, error
-              referrerPolicy: "no-referrer", // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
-              body: JSON.stringify(data), 
-        });
-        addFeedback("Shutter "+action+" done")
-    } catch (e) {
-        addFeedback("Shutter "+action +" possible")
-        console.error(e);
-    }
+    const response = await fetch(CAMERAURL+"/ver100/shooting/control/shutterbutton/manual", {
+      mode:    "no-cors",
+      method: "POST",
+      headers: {
+          "Content-Type": "application/json",
+          // 'Content-Type': 'application/x-www-form-urlencoded',
+          
+        },
+        redirect: "follow", // manual, *follow, error
+        referrerPolicy: "no-referrer", // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
+        body: JSON.stringify(data), 
+    });
+    addFeedback("Shutter "+action+" done")
+  } catch (e) {
+      addFeedback("Shutter "+action +" possible")
+      console.error(e);
+  }
 }
+
+/*activate liveview
+
+response = await fetch(CAMERAURL+"/ver100/shooting/liveview", {
+      mode:    "no-cors",
+      method: "POST",
+      headers: {
+          "Content-Type": "application/json",
+          // 'Content-Type': 'application/x-www-form-urlencoded',
+          
+        },
+        redirect: "follow", // manual, *follow, error
+        referrerPolicy: "no-referrer", // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
+        body: JSON.stringify( {"liveviewsize": "small", "cameradisplay":"on" } ), 
+    });
+
+setInterval(function() {
+    var myImageElement = document.getElementById('myImage');
+    myImageElement.src = 'screen.jpg?rand=' + Math.random();
+}, 5000);
+    // still image here  http://192.168.0.62:8080/ccapi/ver100/shooting/liveview/flip
+  */
+
+
+  //onion skinning would be pretty easy if we can get the last shot
+  // http://192.168.0.62:8080/ccapi/ver110/devicestatus/currentstorage
+  // http://192.168.0.62:8080/ccapi/ver110/contents/sd1
+  // http://192.168.0.62:8080/ccapi/ver110/contents/sd1/100CANON?type=jpeg
+  
+
 
 document.addEventListener("DOMContentLoaded", (event) => {
   console.log("DOMContentLoaded", event)
