@@ -30,8 +30,9 @@ led_strip.start()
 led_strip.clear()
 
 APIURL = "https://raw.githubusercontent.com/stretchyboy/lp-projects/main/"
-
-ip = connect_to_wifi(secrets.WIFI_SSID, secrets.WIFI_PASSWORD)
+ip = None
+while ip == None :
+    ip = connect_to_wifi(secrets.WIFI_SSID, secrets.WIFI_PASSWORD, 30)
 info("ip", ip)
 CAMERAURL = f"http://{secrets.CAMERAIP}:8080/ccapi"
 
@@ -50,7 +51,7 @@ def stickframe_categories(categories):
 
 async def fetchCached(base, fetchtype, path):
     if fetchtype in cache:
-        if cache[fetchtype]['path'] == path:
+        if "path" in cache[fetchtype] and cache[fetchtype]['path'] == path:
             info(">", 'Cache Used for', fetchtype, path)
             return cache[fetchtype]['data']
     cache[fetchtype] = {}
@@ -175,11 +176,24 @@ def load_frame(request, cat, anim, frame):
         error("> load_frame MemoryError ", e)
     except Exception as e:
         error("> load_frame Exception ", e)
-        
+
+def hex_to_rgb(value):
+    value = value.lstrip('#')
+    lv = len(value)
+    return tuple(int(value[i:i + lv // 3], 16) for i in range(0, lv, lv // 3))
+
+
+
 @server.route("/show/<cat>/anim/<anim>/<frame>/<duration>", methods=["GET"])
 def show_frame(request, cat, anim, frame, duration):
     try:
-        hideWhite = False
+        hideWhite = bool(request.query.get("hidewhite", 0))
+        paintBlack = bool(request.query.get("paintblack", 0))
+        paintBlackAs = request.query.get("paintblackas", "FFFFFF")
+        
+        print("hideWhite",hideWhite, "paintBlack", paintBlack, "paintBlackAs", paintBlackAs)
+        paintBlackAsColour = list(hex_to_rgb(paintBlackAs))
+        #print("paintBlackAsColour", paintBlackAsColour)
         j = await fetchCached(APIURL, "frame", f"data/categories/{cat}/anim/{anim}/{frame}.json")
         #print("show_frame", j)
         ministick = StickFramePlayer()
@@ -188,10 +202,28 @@ def show_frame(request, cat, anim, frame, duration):
         startTime = time.time_ns()
         nowTime = startTime
         targetTime = startTime + rowdur
-        print("duration", duration,"ministick.width", ministick.width, "rowdur", rowdur, "startTime",startTime,"targetTime",targetTime )
-        try : 
+        #print("duration", duration,"ministick.width", ministick.width, "rowdur", rowdur, "startTime",startTime,"targetTime",targetTime )
+        for i in range(0, len(ministick.ourPalette), 3):
+          r = ministick.ourPalette[i]
+          g = ministick.ourPalette[i+1]
+          b = ministick.ourPalette[i+2]
+          #print("i", i,r,g,b)
+          if hideWhite and r>253 and g>253 and b>253:
+            ministick.ourPalette[i]   = 0
+            ministick.ourPalette[i+1] = 0
+            ministick.ourPalette[i+2] = 0
+          else:  
+            if paintBlack:
+              ministick.ourPalette[i]   = int(paintBlackAsColour[0] * (255 - r ) / 255 )
+              ministick.ourPalette[i+1] = int(paintBlackAsColour[1] * (255 - g ) / 255 )
+              ministick.ourPalette[i+2] = int(paintBlackAsColour[2] * (255 - b ) / 255 )
+        
+        try :
             for col in ministick.getNextColumn():
               for y in range(ministick.height):
+                r=0
+                g=0
+                b=0
                 try :
                     r = ministick.ourPalette[col[y]*3]
                     g = ministick.ourPalette[(col[y]*3)+1]
@@ -200,10 +232,7 @@ def show_frame(request, cat, anim, frame, duration):
                     pass
                     #error("> show_frame within palette Exception ", e, col[y]*3, len(ministick.ourPalette))
                 try:
-                    if hideWhite and r>253 and g>253 and b>253:
-                        led_strip.set_rgb(y, 0, 0, 0, 0 )
-                    else :
-                        led_strip.set_rgb(y, r, g, b, 10 )
+                    led_strip.set_rgb(y, r, g, b, 10 )
                 except Exception as e:
                     error("> show_frame set_rgb Exception ", e, y, r, g, b, 10 )
               
