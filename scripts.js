@@ -57,6 +57,7 @@ async function sendData() {
           paintblack: formData.get("paintblack"),
           paintblackas: formData.get("paintblackas")
         };
+        console.log("params", params)
         // this line takes the params object and builds the query string
         const query = Object.keys(params).map(k => `${esc(k)}=${esc(params[k])}`).join('&')
       
@@ -77,6 +78,7 @@ async function sendData() {
         }
         await sendShutter("release")
         body.style.backgroundColor = "white";
+        setTimeout(getJpeg, 5000)
     } catch (e) {
         await sendShutter("release")
         addFeedback("Show Failed")
@@ -115,6 +117,7 @@ async function sendConnect() {
 async function sendSightingDots(on) {
   // Associate the FormData object with the form element
   //console.log("sendSightingDots", on)
+  sendLiveview()
   try {
         const response = await fetch("/sightingdots/"+on, {
         cache:"no-store",
@@ -124,6 +127,11 @@ async function sendSightingDots(on) {
         status = "off"
         if(on){
             status = "on"
+            //sendAF()
+            sendLiveview()
+        } else {
+          //sendAF("stop")
+          clearInterval(liveviewInterval)
         }
         addFeedback("Sighting Dots "+status)
 
@@ -133,63 +141,144 @@ async function sendSightingDots(on) {
     }
 }
 
-async function sendShutter(action="full_press") { // ["full_press", "half_press", "release"]:
+async function sendToCamera(name,path, data) { // ["full_press", "half_press", "release"]:
   if (bConnected == false){
     return
   }
   // Associate the FormData object with the form element
   try {
-    addFeedback("Shutter "+action)
-    const data = {"af": false, "action": action}
-
-    const response = await fetch(CAMERAURL+"/ver100/shooting/control/shutterbutton/manual", {
+    addFeedback(name)
+    const response = await fetch(CAMERAURL+path, {
       mode:    "no-cors",
       method: "POST",
       headers: {
-          "Content-Type": "application/json",
-          // 'Content-Type': 'application/x-www-form-urlencoded',
-          
-        },
-        redirect: "follow", // manual, *follow, error
-        referrerPolicy: "no-referrer", // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
-        body: JSON.stringify(data), 
+        "Content-Type": "application/json",
+      },
+      redirect: "follow", // manual, *follow, error
+      referrerPolicy: "no-referrer", // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
+      body: JSON.stringify(data), 
     });
-    addFeedback("Shutter "+action+" done")
+    addFeedback(name+" Done")
   } catch (e) {
-      addFeedback("Shutter "+action +" possible")
+      addFeedback(name+" Failed")
       console.error(e);
   }
 }
 
-/*activate liveview
 
-response = await fetch(CAMERAURL+"/ver100/shooting/liveview", {
-      mode:    "no-cors",
-      method: "POST",
-      headers: {
-          "Content-Type": "application/json",
-          // 'Content-Type': 'application/x-www-form-urlencoded',
-          
-        },
-        redirect: "follow", // manual, *follow, error
-        referrerPolicy: "no-referrer", // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
-        body: JSON.stringify( {"liveviewsize": "small", "cameradisplay":"on" } ), 
-    });
+async function sendShutter(action="full_press") { // ["full_press", "half_press", "release"]:
+  var name = "Shutter Full Press"
+  if(action=="release"){
+    name = "Shutter Release"
+  }
+  const data = {"af": false, "action": action}
+  return await sendToCamera(name, "/ver100/shooting/control/shutterbutton/manual", data)
+}
+var liveviewInterval = 0 
+async function sendLiveview(){
+  const data = {"liveviewsize": "small", "cameradisplay":"on" }
+  
+  liveviewInterval = setInterval(function() {
+      var myImageElement = document.getElementById('liveview');
+      myImageElement.src = CAMERAURL+'/ver100/shooting/liveview/flip?rand=' + Math.random();
+  }, 2000);
+  return await sendToCamera("Live View", "/ver100/shooting/liveview", data)
+}
 
-setInterval(function() {
-    var myImageElement = document.getElementById('myImage');
-    myImageElement.src = 'screen.jpg?rand=' + Math.random();
-}, 5000);
-    // still image here  http://192.168.0.62:8080/ccapi/ver100/shooting/liveview/flip
+//Doesn't seem to help
+async function sendAF(action="start") { // ["full_press", "half_press", "release"]:
+  var name = "Auto Focus Start"
+  if(action=="stop"){
+    name = "Auto Focus Stop"
+  }
+  const data = {"action": action}
+  return await sendToCamera(name, "/ver100/shooting/control/af", data)
+}
+
+// http://192.168.1.2:8080/ccapi/ver100/shooting/control/af {"action": "start"} then {"action": "stop"}
+
+async function sendCameraGet(path) {
+  // Associate the FormData object with the form element
+  const response = await fetch(CAMERAURL+path, {
+    method: "GET",
+    mode:   "no-cors",
+    cache:  "no-store",
+  });
+  //addFeedback(name+" Done")
+  try{
+  const data  = await response.json()
+  console.log("sendCameraGet", path, data)
+  return data
+  } catch (e) {
+    console.error(e, response);  
+  }
+}
+/*
+async function getJpeg() {
+  const options = {
+    method: "GET",
+    mode:   "no-cors",
+    cache:  "no-store",
+    credentials: "same-origin", // include, *same-origin, omit
+    headers: {
+      "Content-Type": "application/json",
+      // 'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    redirect: "follow", // manual, *follow, error
+    referrerPolicy: "no-referrer"
+  }
+  const response = await fetch(CAMERAURL+"/ver110/contents/sd1/100CANON?type=jpeg", options)//"/ver110/devicestatus/currentstorage", options);
+  const movies = await response.json();
+  console.log("data", movies);
+}
+*/
+
+async function getJpeg(){
+  const options = {
+    method: "GET",
+    mode:   "no-cors",
+    cache:  "no-store",
+    credentials: "same-origin", // include, *same-origin, omit
+    headers: {
+      "Content-Type": "application/json",
+      // 'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    redirect: "follow", // manual, *follow, error
+    referrerPolicy: "no-referrer"
+  }
+  const storageRequest = new Request(CAMERAURL+"/ver110/devicestatus/currentstorage", options);
+  fetch(storageRequest)
+  .then((response) => console.log)
+  
+  /*response.json())
+  .then((data) => {
+    console.log("data", data)
+  })
+  .catch(console.error)
+  //.catch((d) => {console.log("d", dispatchEvent)})
   */
+}
 
-
+/*
+  // still image here  http://192.168.0.62:8080/ccapi/ver100/shooting/liveview/flip
+async function getJpeg(){
+  addFeedback("Getting Image")
   //onion skinning would be pretty easy if we can get the last shot
+  const resp1 = await sendCameraGet("/ver110/devicestatus/currentstorage")
+  //const resp1J = await resp1.json();
+  console.log(resp1J)
+  const resp2 = await sendCameraGet("/ver110/contents/sd1")
+  console.log(resp2)
+  const resp3 = await sendCameraGet("ver110/contents/sd1/100CANON?type=jpeg")
+  console.log(resp3)
+  return resp3
+  
+
   // http://192.168.0.62:8080/ccapi/ver110/devicestatus/currentstorage
   // http://192.168.0.62:8080/ccapi/ver110/contents/sd1
   // http://192.168.0.62:8080/ccapi/ver110/contents/sd1/100CANON?type=jpeg
-  
-
+}
+*/
 
 document.addEventListener("DOMContentLoaded", (event) => {
   console.log("DOMContentLoaded", event)
