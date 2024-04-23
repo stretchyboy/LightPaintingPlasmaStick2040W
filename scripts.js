@@ -177,12 +177,14 @@ async function sendShutter(action="full_press") { // ["full_press", "half_press"
 var liveviewInterval = 0 
 async function sendLiveview(){
   const data = {"liveviewsize": "small", "cameradisplay":"on" }
+  if (bConnected ){
   
-  liveviewInterval = setInterval(function() {
-      var myImageElement = document.getElementById('liveview');
-      myImageElement.src = CAMERAURL+'/ver100/shooting/liveview/flip?rand=' + Math.random();
-  }, 2000);
-  return await sendToCamera("Live View", "/ver100/shooting/liveview", data)
+    liveviewInterval = setInterval(function() {
+        var myImageElement = document.getElementById('liveview');
+        myImageElement.src = CAMERAURL+'/ver100/shooting/liveview/flip?rand=' + Math.random();
+    }, 2000);
+    return await sendToCamera("Live View", "/ver100/shooting/liveview", data)
+  }
 }
 
 //Doesn't seem to help
