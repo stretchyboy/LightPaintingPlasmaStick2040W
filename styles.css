@@ -1,6 +1,13 @@
 body{
     font-size: x-large;
+    background-color:black;
 }
+
+#content {
+ background-color: white;
+
+}
+
 .switch {
 position: relative;
 display: inline-block;

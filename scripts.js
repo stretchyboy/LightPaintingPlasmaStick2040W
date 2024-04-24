@@ -4,6 +4,7 @@ const submit = document.querySelector("#submit");
 const feedback = document.querySelector("#feedback");
 const sightingdots = document.querySelector("#sightingdots");
 const body = document.querySelector("body");
+const content = document.querySelector("#content");
 var loaded = ""
 var bConnected = false
 
@@ -48,7 +49,7 @@ async function sendData() {
     addFeedback("Showing")
     await sendShutter()
     
-    body.style.backgroundColor = "black";
+    content.style.display = "none" 
     try {
 
         const esc = encodeURIComponent;
@@ -77,15 +78,13 @@ async function sendData() {
           addFeedback("Not Shown")
         }
         await sendShutter("release")
-        body.style.backgroundColor = "white";
+        content.style.display = "block" 
         setTimeout(getJpeg, 5000)
     } catch (e) {
         await sendShutter("release")
         addFeedback("Show Failed")
         console.error(e);
     }
-
-        
   }
 }
 
@@ -93,7 +92,7 @@ function unload(msg=""){
     addFeedback(msg)
     loaded = ""
     submit.setAttribute("value", "Load")
-    body.style.backgroundColor = "white";
+    content.style.display = "block" 
 }
 
 async function sendConnect() {
@@ -165,7 +164,6 @@ async function sendToCamera(name,path, data) { // ["full_press", "half_press", "
   }
 }
 
-
 async function sendShutter(action="full_press") { // ["full_press", "half_press", "release"]:
   var name = "Shutter Full Press"
   if(action=="release"){
@@ -174,6 +172,7 @@ async function sendShutter(action="full_press") { // ["full_press", "half_press"
   const data = {"af": false, "action": action}
   return await sendToCamera(name, "/ver100/shooting/control/shutterbutton/manual", data)
 }
+
 var liveviewInterval = 0 
 async function sendLiveview(){
   const data = {"liveviewsize": "small", "cameradisplay":"on" }
@@ -287,7 +286,6 @@ document.addEventListener("DOMContentLoaded", (event) => {
   sendConnect();
   sendData();
 });
-
 
 form.addEventListener("submit", (event) => {
   event.preventDefault();  

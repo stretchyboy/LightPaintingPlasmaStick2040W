@@ -9,6 +9,7 @@
     
 </head>
 <body>
+    <div id="content">
     <h1>{{name}}</h1>
     <p>Image is {{widthCM}}cm wide.</p>
     <form id="frameselect">
@@ -67,6 +68,7 @@
     {{"<div><img src=\""+src+"\"></div>" if src else ""}}
 
     <a href="/">Home</a>
+</div>
 <script>
   const CAMERAURL = "{{CAMERAURL}}"
   console.log("CAMERAURL value", CAMERAURL)
