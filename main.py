@@ -187,8 +187,8 @@ def hex_to_rgb(value):
 @server.route("/show/<cat>/anim/<anim>/<frame>/<duration>", methods=["GET"])
 def show_frame(request, cat, anim, frame, duration):
     try:
-        hideWhite = bool(request.query.get("hidewhite", 0))
-        paintBlack = bool(request.query.get("paintblack", 0))
+        hideWhite = request.query.get("hidewhite", "off") == "on"
+        paintBlack = request.query.get("paintblack", "off") == "on"
         paintBlackAs = request.query.get("paintblackas", "FFFFFF")
         
         print("hideWhite",hideWhite, "paintBlack", paintBlack, "paintBlackAs", paintBlackAs)
@@ -203,20 +203,24 @@ def show_frame(request, cat, anim, frame, duration):
         nowTime = startTime
         targetTime = startTime + rowdur
         #print("duration", duration,"ministick.width", ministick.width, "rowdur", rowdur, "startTime",startTime,"targetTime",targetTime )
+        palette = []
         for i in range(0, len(ministick.ourPalette), 3):
           r = ministick.ourPalette[i]
           g = ministick.ourPalette[i+1]
           b = ministick.ourPalette[i+2]
+          palette.append(r)
+          palette.append(g)
+          palette.append(b)
           #print("i", i,r,g,b)
           if hideWhite and r>253 and g>253 and b>253:
-            ministick.ourPalette[i]   = 0
-            ministick.ourPalette[i+1] = 0
-            ministick.ourPalette[i+2] = 0
+            palette[i]   = 0
+            palette[i+1] = 0
+            palette[i+2] = 0
           else:  
             if paintBlack:
-              ministick.ourPalette[i]   = int(paintBlackAsColour[0] * (255 - r ) / 255 )
-              ministick.ourPalette[i+1] = int(paintBlackAsColour[1] * (255 - g ) / 255 )
-              ministick.ourPalette[i+2] = int(paintBlackAsColour[2] * (255 - b ) / 255 )
+              palette[i]   = int(paintBlackAsColour[0] * (255 - r ) / 255 )
+              palette[i+1] = int(paintBlackAsColour[1] * (255 - g ) / 255 )
+              palette[i+2] = int(paintBlackAsColour[2] * (255 - b ) / 255 )
         
         try :
             for col in ministick.getNextColumn():
@@ -225,14 +229,14 @@ def show_frame(request, cat, anim, frame, duration):
                 g=0
                 b=0
                 try :
-                    r = ministick.ourPalette[col[y]*3]
-                    g = ministick.ourPalette[(col[y]*3)+1]
-                    b = ministick.ourPalette[(col[y]*3)+2]
+                    r = palette[col[y]*3]
+                    g = palette[(col[y]*3)+1]
+                    b = palette[(col[y]*3)+2]
                 except Exception as e:
                     pass
                     #error("> show_frame within palette Exception ", e, col[y]*3, len(ministick.ourPalette))
                 try:
-                    led_strip.set_rgb(y, r, g, b, 10 )
+                    led_strip.set_rgb(y+(144 - ministick.height), r, g, b, 10 )
                 except Exception as e:
                     error("> show_frame set_rgb Exception ", e, y, r, g, b, 10 )
               
@@ -261,8 +265,8 @@ def show_frame(request, cat, anim, frame, duration):
 @server.route("/sightingdots/<on>", methods=["GET"]) 
 def showSightingDots(request, on):
     if int(on):
-        led_strip.set_rgb(0,255,255,255,10)
-        led_strip.set_rgb(NUM_LEDS-1,255,255,255,10)
+        led_strip.set_rgb(0,255,0,0,10) #top
+        led_strip.set_rgb(NUM_LEDS-1,0,0,255,10) #top
     else:
         led_strip.clear()
     return server.Response('{"success":1}', status=200)#, headers={"Content-Type":"application/json"})
