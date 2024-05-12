@@ -81,7 +81,7 @@ async function sendData() {
         }
         await sendShutter("release")
         content.style.display = "block" 
-        setTimeout(getJpeg, 5000)
+        //setTimeout(getJpeg, 5000)
     } catch (e) {
         await sendShutter("release")
         addFeedback("Show Failed")
@@ -133,6 +133,7 @@ async function sendSightingDots(on) {
         } else {
           //sendAF("stop")
           clearInterval(liveviewInterval)
+          document.getElementById('liveview').style.display = "none"
         }
         addFeedback("Sighting Dots "+status)
 
@@ -179,7 +180,7 @@ var liveviewInterval = 0
 async function sendLiveview(){
   const data = {"liveviewsize": "small", "cameradisplay":"on" }
   if (bConnected ){
-  
+    document.getElementById('liveview').style.display = "block"
     liveviewInterval = setInterval(function() {
         var myImageElement = document.getElementById('liveview');
         myImageElement.src = CAMERAURL+'/ver100/shooting/liveview/flip?rand=' + Math.random();
@@ -241,7 +242,8 @@ async function getJpeg(){
     method: "GET",
     mode:   "no-cors",
     cache:  "no-store",
-    credentials: "same-origin", // include, *same-origin, omit
+    //credentials: "same-origin", // include, *same-origin, omit
+    credentials: "omit", // include, *same-origin, omit
     headers: {
       "Content-Type": "application/json",
       // 'Content-Type': 'application/x-www-form-urlencoded',
