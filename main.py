@@ -17,7 +17,7 @@ import plasma
 from plasma import plasma_stick
 import time
 from stickframeplayer import StickFramePlayer
-
+import random
 
 # Set how many LEDs you have
 NUM_LEDS = 144
@@ -182,16 +182,26 @@ def hex_to_rgb(value):
     lv = len(value)
     return tuple(int(value[i:i + lv // 3], 16) for i in range(0, lv, lv // 3))
 
-
+def makeRandomLines(width, height):
+    aLines = []
+    for y in range(height):
+        line = [random.randint(0, width), random.randint(0, width)]
+        line.sort()
+        aLines.append(line)
+    return aLines
 
 @server.route("/show/<cat>/anim/<anim>/<frame>/<duration>", methods=["GET"])
 def show_frame(request, cat, anim, frame, duration):
     try:
+        x=0
         hideWhite = request.query.get("hidewhite", "off") == "on"
         paintBlack = request.query.get("paintblack", "off") == "on"
         paintBlackAs = request.query.get("paintblackas", "FFFFFF")
+        bSpeckles = request.query.get("speckles", "off") == "on"
+        bLines = request.query.get("lines", "off") == "on"
         
-        print("hideWhite",hideWhite, "paintBlack", paintBlack, "paintBlackAs", paintBlackAs)
+        
+        #print("hideWhite",hideWhite, "paintBlack", paintBlack, "paintBlackAs", paintBlackAs)
         paintBlackAsColour = list(hex_to_rgb(paintBlackAs))
         #print("paintBlackAsColour", paintBlackAsColour)
         j = await fetchCached(APIURL, "frame", f"data/categories/{cat}/anim/{anim}/{frame}.json")
@@ -199,6 +209,9 @@ def show_frame(request, cat, anim, frame, duration):
         ministick = StickFramePlayer()
         ministick.loadJson(j)
         rowdur = int(1000000000 * float(duration)/float(ministick.width))
+        if(bLines):
+            aLines = makeRandomLines(ministick.width, ministick.height)
+        
         startTime = time.time_ns()
         nowTime = startTime
         targetTime = startTime + rowdur
@@ -236,10 +249,26 @@ def show_frame(request, cat, anim, frame, duration):
                     pass
                     #error("> show_frame within palette Exception ", e, col[y]*3, len(ministick.ourPalette))
                 try:
+                    level = 1
+                    if bLines:
+                        if(x >= aLines[y][0] and x <= aLines[y][1]):
+                            if(bSpeckles):
+                                level = random.random()
+                            else:
+                                level = 1
+                        else:
+                            level = 0
+                    elif bSpeckles :
+                        level = random.random()
+                    if level < 1:
+                        r = int(level * r)
+                        g = int(level * g)
+                        b = int(level * b)
+                        
                     led_strip.set_rgb(y+(144 - ministick.height), r, g, b, 10 )
                 except Exception as e:
                     error("> show_frame set_rgb Exception ", e, y, r, g, b, 10 )
-              
+              x += 1  
               while nowTime < targetTime:
                   time.sleep_ms(0)
                   nowTime = time.time_ns()

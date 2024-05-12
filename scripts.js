@@ -56,7 +56,9 @@ async function sendData() {
         const params = { 
           hidewhite: formData.get("hidewhite"),
           paintblack: formData.get("paintblack"),
-          paintblackas: formData.get("paintblackas")
+          paintblackas: formData.get("paintblackas"),
+          speckles: formData.get("speckles"),
+          lines: formData.get("lines")
         };
         console.log("params", params)
         // this line takes the params object and builds the query string
