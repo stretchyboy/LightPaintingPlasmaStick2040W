@@ -43,49 +43,53 @@ async function sendData() {
         unload("Load Failed")
     }
   } else { 
-    sightingdots.checked = false
-    //await sendSightingDots(false)
+    if(sightingdots.checked){
+      addFeedback("Sighting Dots still on")
+        
+      } else {
     
-    addFeedback("Showing")
-    await sendShutter()
-    
-    content.style.display = "none" 
-    try {
-
-        const esc = encodeURIComponent;
-        const params = { 
-          hidewhite: formData.get("hidewhite"),
-          paintblack: formData.get("paintblack"),
-          paintblackas: formData.get("paintblackas"),
-          speckles: formData.get("speckles"),
-          lines: formData.get("lines")
-        };
-        console.log("params", params)
-        // this line takes the params object and builds the query string
-        const query = Object.keys(params).map(k => `${esc(k)}=${esc(params[k])}`).join('&')
+      addFeedback("Showing")
+      await sendShutter()
       
+      content.style.display = "none" 
+      try {
 
-        const response = await fetch("/show/"+formData.get("cat")+"/anim/"+formData.get("anim")+"/"+formData.get("frame")+"/"+formData.get("duration")+"?"+query, {
-        method: "GET",
-        cache:"no-store",
-        // Set the FormData instance as the request body
-        });
-        const showdata = await response.text();
-        if(response.status == 200)
-        {
-          addFeedback("Shown")
-        }
-        else
-        {
-          addFeedback("Not Shown")
-        }
-        await sendShutter("release")
-        content.style.display = "block" 
-        //setTimeout(getJpeg, 5000)
-    } catch (e) {
-        await sendShutter("release")
-        addFeedback("Show Failed")
-        console.error(e);
+          const esc = encodeURIComponent;
+          const params = { 
+            hidewhite: formData.get("hidewhite"),
+            paintblack: formData.get("paintblack"),
+            paintblackas: formData.get("paintblackas"),
+            speckles: formData.get("speckles"),
+            lines: formData.get("lines")
+          };
+          console.log("params", params)
+          // this line takes the params object and builds the query string
+          const query = Object.keys(params).map(k => `${esc(k)}=${esc(params[k])}`).join('&')
+        
+
+          const response = await fetch("/show/"+formData.get("cat")+"/anim/"+formData.get("anim")+"/"+formData.get("frame")+"/"+formData.get("duration")+"?"+query, {
+          method: "GET",
+          cache:"no-store",
+          // Set the FormData instance as the request body
+          });
+          const showdata = await response.text();
+          console.log("showdata", showdata)
+          if(response.status == 200)
+          {
+            addFeedback("Shown")
+          }
+          else
+          {
+            addFeedback("Not Shown")
+          }
+          await sendShutter("release")
+          content.style.display = "block" 
+          //setTimeout(getJpeg, 5000)
+      } catch (e) {
+          await sendShutter("release")
+          addFeedback("Show Failed")
+          console.error(e);
+      }
     }
   }
 }
@@ -237,6 +241,7 @@ async function getJpeg() {
 }
 */
 
+// use event pooling instead it will give list of new images http://192.168.0.62:8080/ccapi/ver100/event/polling
 async function getJpeg(){
   const options = {
     method: "GET",

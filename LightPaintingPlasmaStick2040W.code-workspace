@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../lp-projects"
+		}
+	],
+	"settings": {
+		"liveServer.settings.multiRootWorkspaceName": "LightPaintingPlasmaStick2040W"
+	}
+}
