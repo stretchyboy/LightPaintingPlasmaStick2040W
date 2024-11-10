@@ -49,11 +49,12 @@ def stickframe_categories(categories):
     
     return out
 
-async def fetchCached(base, fetchtype, path):
-    if fetchtype in cache:
-        if "path" in cache[fetchtype] and cache[fetchtype]['path'] == path:
-            info(">", 'Cache Used for', fetchtype, path)
-            return cache[fetchtype]['data']
+async def fetchCached(base, fetchtype, path, force=False):
+    if force == False:
+        if fetchtype in cache:
+            if "path" in cache[fetchtype] and cache[fetchtype]['path'] == path:
+                info(">", 'Cache Used for', fetchtype, path)
+                return cache[fetchtype]['data']
     cache[fetchtype] = {}
     URL = base+path
     info(f'Requesting URL: {URL}')
@@ -103,39 +104,56 @@ def render_options(items, selected=0):
     return out        
 
 @server.route("/categories/<cat>", methods=["GET"])
-def index(request, cat):
-    j = await fetchCached(APIURL, "category", f"data/categories/{cat}.json")    
-    cat = server.urldecode(cat)
+def categories_index(request, cat):
+    force = "force" in request.query and bool(int(request.query["force"]))
     
-    return await render_template("list.html", name=f"Category: {cat}", path=f"/categories/{cat}/anim/", items=j)
-    
+    try:
+        j = await fetchCached(APIURL, "category", f"data/categories/{cat}.json", force)    
+        cat = server.urldecode(cat)    
+        return await render_template("list.html", name=f"Category: {cat}", path=f"/categories/{cat}/anim/", items=j)
+    except Exception as e:
+        error("> categories/index Exception ", e)
+        led_strip.clear()
+        return server.Response('{"success":0}', status=500)#, headers={"Content-Type":"application/json"})
+        
 @server.route("/categories/<cat>/anim/<anim>", methods=["GET"])
 def control(request, cat, anim):
-    k = fetchCached(APIURL, "frame", f"data/categories/{cat}/anim/{anim}/1.json")
-    j = await fetchCached(APIURL, "anim", f"data/categories/{cat}/anim/{anim}.json")
-    l = await k
-    #print("l", l)
-    sWidthCM = str(l["widthCM"])
+    force = "force" in request.query and bool(int(request.query["force"]))
     
-    print("sWidthCM", sWidthCM)
-    cat = server.urldecode(cat)
-    anim = server.urldecode(anim)
-    src = ""
-    if "http" in j['source']:
-        src = j['source']
-    return await render_template(
-        "control.html",
-        name=f"Category: {cat} : Anim: {anim}",
-        path=f"/categories/{cat}/anim/",
-        cat=cat,
-        anim=anim,
-        currentframe = "1",
-        framecount=str(j['frames']),
-        src=src,
-        widthCM = sWidthCM,
-        CAMERAURL = CAMERAURL 
-)
-
+    try:
+        k = fetchCached(APIURL, "frame", f"data/categories/{cat}/anim/{anim}/1.json", force)
+        j = await fetchCached(APIURL, "anim", f"data/categories/{cat}/anim/{anim}.json", force)
+        l = await k
+        #print("l", l)
+        sWidthCM = str(l["widthCM"])
+        
+        print("sWidthCM", sWidthCM)
+        cat = server.urldecode(cat)
+        anim = server.urldecode(anim)
+        src = ""
+        if "http" in j['source']:
+            src = j['source']
+        return await render_template(
+            "control.html",
+            name=f"Category: {cat} : Anim: {anim}",
+            path=f"/categories/{cat}/anim/",
+            cat=cat,
+            anim=anim,
+            currentframe = "1",
+            framecount=str(j['frames']),
+            src=src,
+            widthCM = sWidthCM,
+            CAMERAURL = CAMERAURL 
+        )
+    except Exception as e:
+        error("> control Exception ", e)
+        led_strip.clear()
+        return await render_template(
+            "500.html",
+            name=f"Category: {cat} : Anim: {anim}",
+            status=500)
+        #return server.Response('{"success":0}', status=500)
+    
 @server.route("/js/<filename>", ["GET"])
 def staticjs(request, filename):
     with open(filename, "r") as f:
@@ -172,10 +190,13 @@ def load_frame(request, cat, anim, frame):
         #return server.Response(text, status=200, headers={"Content-Type":"application/json"})
     except ValueError as e:
         error("> load_frame ValueError ", e)
+        return server.Response('{"success":0}', status=500)
     except MemoryError as e:
         error("> load_frame MemoryError ", e)
+        return server.Response('{"success":0}', status=500)
     except Exception as e:
         error("> load_frame Exception ", e)
+        return server.Response('{"success":0}', status=500)
 
 def hex_to_rgb(value):
     value = value.lstrip('#')
@@ -196,7 +217,7 @@ def show_frame(request, cat, anim, frame, duration):
         x=0
         hideWhite = request.query.get("hidewhite", "off") == "on"
         paintBlack = request.query.get("paintblack", "off") == "on"
-        paintBlackAs = request.query.get("paintblackas", "FFFFFF")
+        paintBlackAs = request.query.get("paintblackas", "#FFFFFF")
         bSpeckles = request.query.get("speckles", "off") == "on"
         bLines = request.query.get("lines", "off") == "on"
         
@@ -293,20 +314,29 @@ def show_frame(request, cat, anim, frame, duration):
     
 @server.route("/sightingdots/<on>", methods=["GET"]) 
 def showSightingDots(request, on):
-    if int(on):
-        led_strip.set_rgb(0,255,0,0,10) #top
-        led_strip.set_rgb(NUM_LEDS-1,0,0,255,10) #top
-    else:
+    try:
+        if int(on):
+            led_strip.set_rgb(0,255,0,0,10) #top
+            led_strip.set_rgb(NUM_LEDS-1,0,0,255,10) #top
+        else:
+            led_strip.clear()
+        return server.Response('{"success":1}', status=200)#, headers={"Content-Type":"application/json"})
+    except Exception as e:
+        error("> showSightingDots Exception ", e)
         led_strip.clear()
-    return server.Response('{"success":1}', status=200)#, headers={"Content-Type":"application/json"})
-    
+        return server.Response('{"success":0}', status=500)#, headers={"Content-Type":"application/json"})
+        
 @server.route("/", methods=["GET"])
 def index(request):
-    j = await fetchCached(APIURL, "catergories", "data/categories.json")
-
-    return await render_template("list.html", name="Catergories", path="/categories/", items=j)
+    force = "force" in request.query and bool(int(request.query["force"]))
+    try:
+        j = await fetchCached(APIURL, "catergories", "data/categories.json", force)
+        return await render_template("list.html", name="Catergories", path="/categories/", items=j)
+    except Exception as e:
+        error("> index Exception ", e)
+        led_strip.clear()
+        return server.Response('{"success":0}', status=500)#, headers={"Content-Type":"application/json"})
     
-
 
 # catchall example
 @server.catchall()
